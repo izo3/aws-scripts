@@ -3,7 +3,7 @@
 This repo contains some scripts that will help you manage aws infrastructure. 
 
 
-ami-copy-region
+ami-copy
 ---------------
 
 ami-copy-region is a bash script that uses aws cli tools to copy an ami and its tags to a new region.
@@ -11,12 +11,12 @@ ami-copy-region is a bash script that uses aws cli tools to copy an ami and its 
 
 Usage: 
 
-./ami-copy-region --ami \<ami\> --source-region \<region\> --destination-region \<region\>
+./ami-copy --ami \<ami\> --source-region \<region\> --destination-region \<region\>
 
 
 Example Usage: 
 
-./ami-copy-region --ami ami-3cddfa43 --source-region us-east-1 --destination-region us-west-2
+./ami-copy --ami ami-3cddfa43 --source-region us-east-1 --destination-region us-west-2
 
 
 
