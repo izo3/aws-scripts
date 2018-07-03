@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# This script copies an ami and its tags from one region to another
+
+usage(){
+   if [[ $# -gt 0 ]]; then
+      echo "$@"
+      echo
+   fi
+
+   echo "Usage: $0 --ami <ami> --source-region <region> --destination-region <region>"
+   echo
+   exit 1
+}
+
+fail(){
+   echo "$@"
+   echo
+   exit 1
+}
+
+while [[ ! -z "$1" ]]; do
+   case "$1" in
+      --ami)
+         if [[ ! "$2" ]]; then
+            fail "Must pass parameter to $1"
+         fi
+         ami=$2
+         shift
+         ;;
+      --source-region)
+         if [[ ! "$2" ]]; then
+            fail "Must pass parameter to $1"
+         fi
+
+         source_region=$2
+         shift
+         ;;
+      --destination-region)
+         if [[ ! "$2" ]]; then
+            fail "Must pass parameter to $1"
+         fi
+         destination_region=$2
+         shift
+         ;;
+      *)
+         usage "Invalid option $1"
+         ;;
+    esac
+    shift
+done
+
+if [[ ! "$ami" ]]; then
+   usage "--ami is a required parameter"
+fi
+
+if [[ ! "$source_region" ]]; then
+   usage "--source-region is a required parameter"
+fi
+
+if [[ ! "$destination_region" ]]; then
+   usage "--destination-region is a required parameter"
+fi
+
+
+hash aws 2>/dev/null || fail "CRITICAL: Please install AWS CLI tools. https://aws.amazon.com/cli/"
+hash jq 2>/dev/null || fail "CRITICAL: Please install jq tool. https://stedolan.github.io/jq/download/"
+
+function describe_tags(){
+  all_tags=$(aws ec2 describe-tags --filters "Name=resource-id, Values=${ami}" | jq -r '.Tags[] | "\(.Key) \(.Value)"')
+  if [[ $? -ne 0 ]]; then 
+    fail "Describing tags failed"
+  fi
+}
+
+function get_ami_name(){
+  origin_ami_name=$(aws ec2 describe-images --image-ids "${ami}" |jq -r ".Images[].Name")
+  if [[ $? -ne 0 ]]; then 
+    fail "Describe images failed"
+  fi
+}
+
+function copy_ami(){ 
+  destination_ami=$(aws ec2 copy-image --source-image-id "${ami}" --source-region "${source_region}" --region "${destination_region}" --name "${origin_ami_name}" | jq -r .ImageId )
+  if [[ $? -ne 0 ]]; then 
+    fail "Copy ami failed"
+  fi
+}
+
+# wait until the image becomes available 
+function image_available(){
+  image_available=$(aws ec2 wait image-available --image-ids "$destination_ami" --region "$destination_region")
+  if [[ $? -ne 0 ]]; then 
+      fail "Image is not available: $destination_ami"
+  fi 
+
+}
+
+# @todo add tags in a json format
+function add_tags(){
+	while read -r key value; do
+    adding_tags=$(aws ec2 create-tags --resources "$destination_ami" --tags Key="$key",Value="$value" --region "$destination_region")
+    if [[ $? -ne 0 ]]; then 
+      fail "Adding tags failed"
+    fi 
+	done <<< "${all_tags}"
+}
+
+describe_tags
+get_ami_name
+copy_ami
+image_available 
+add_tags
