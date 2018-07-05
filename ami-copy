@@ -67,14 +67,14 @@ hash aws 2>/dev/null || fail "CRITICAL: Please install AWS CLI tools. https://aw
 hash jq 2>/dev/null || fail "CRITICAL: Please install jq tool. https://stedolan.github.io/jq/download/"
 
 function describe_tags(){
-  all_tags=$(aws ec2 describe-tags --filters "Name=resource-id, Values=${ami}" | jq -r '.Tags[] | "\(.Key) \(.Value)"')
+  all_tags=$(aws ec2 describe-tags --region "${source_region}" --filters "Name=resource-id, Values=${ami}" | jq -r '.Tags[] | "\(.Key) \(.Value)"')
   if [[ $? -ne 0 ]]; then 
     fail "Describing tags failed"
   fi
 }
 
 function get_ami_name(){
-  origin_ami_name=$(aws ec2 describe-images --image-ids "${ami}" |jq -r ".Images[].Name")
+  origin_ami_name=$(aws ec2 describe-images --region "${source_region}" --image-ids "${ami}" |jq -r ".Images[].Name")
   if [[ $? -ne 0 ]]; then 
     fail "Describe images failed"
   fi
