@@ -25,3 +25,8 @@ Prerequisites
 * jq 
 * aws cli tools 
 * An AWS account
+
+Bugs/Issues
+-----------
+* If you are running aws cli version aws-cli/1.11.136 and a copy takes more than 10min, you might get an error: "Waiter ImageAvailable failed: Max attempts exceeded"
+* Use aws-cli tools version >= 1.14.53 
