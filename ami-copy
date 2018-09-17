@@ -1,11 +1,12 @@
 #!/bin/bash
 
+# This script copies an ami and its tags from one region to another
+
+
 
 # Maximum wait for AMI copy is 1200sec, or 20min
 
 max_wait=1200 
-
-# This script copies an ami and its tags from one region to another
 
 usage(){
    if [[ $# -gt 0 ]]; then
