@@ -1,5 +1,10 @@
 #!/bin/bash
 
+
+# Maximum wait for AMI copy is 1200sec, or 20min
+
+max_wait=1200 
+
 # This script copies an ami and its tags from one region to another
 
 usage(){
@@ -87,13 +92,22 @@ function copy_ami(){
   fi
 }
 
-# wait until the image becomes available 
+# wait until the image becomes available, or exceeds max_wait time
 function image_available(){
-  image_available=$(aws ec2 wait image-available --image-ids "$destination_ami" --region "$destination_region")
-  if [[ $? -ne 0 ]]; then 
-      fail "Image is not available: $destination_ami"
-  fi 
+  while [ "$image_available" != "available" ]; do 
+    image_available=$(aws ec2 describe-images --image-ids "$destination_ami" --region "$destination_region" |jq -r ".Images[].State")
 
+    # wait 
+    sleep 30
+       
+    max_wait=$(($max_wait - 30))
+
+    # Check if we can wait more
+    if [[ "$max_wait" < 0 ]]; then 
+      fail "Image wait timeout reached for image: $destination_ami"
+    fi
+
+  done
 }
 
 # @todo add tags in a json format
